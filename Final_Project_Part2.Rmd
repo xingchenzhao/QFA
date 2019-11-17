@@ -59,30 +59,35 @@ As can be seen from the selection table, the main sector is Information Technolo
 
 Select Five biggest information technology company from sp500, and also traded on NYSE or NASDAQ. 
 ```{r}
-Information_technology company <- sq500 %>% 
-  inner_join(rbind(nyse,nasdaq))
+Information_technology_company <- sp500 %>% 
+  inner_join(rbind(nyse,nasdaq) %>% 
+               select(symbol, last.sale.price,market.cap, ipo.year),by = c("symbol")) %>% 
+  filter(!is.na(market.cap) & ( sector == "Information Technology" | sector == "Communication Services" | sector == "Consumer Discretionary" ) & !is.na(ipo.year)) %>% 
+  arrange(desc(weight)) %>% 
+  head(5)
+Information_technology_company 
 ```
 
 
 1. We want to calculate the monthly returns for different stocks and compare the result of those stocks. 
   * Monthly return is the period returns re-scaled to a period of 1 month. This allows investors to compare returns of different assets that they have owned for different lengths of time. 
 ```{r}
-Google <- tq_get("GOOGL", get = "stock.prices")
-Google_monthly_return <- Google %>% 
+Microsoft <- tq_get("MSFT", get = "stock.prices")
+Microsoft_monthly_return <- Microsoft %>% 
   tq_transmute(
     select = adjusted, 
     mutate_fun = periodReturn, 
     period = "monthly",
     col_rename = "monthly_return", 
   )
-Google_monthly_return %>% head()
-Google_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line(se = FALSE)
+Microsoft_monthly_return %>% head()
+Microsoft_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line(se = FALSE)
 ```
 As can be see from the result, the monthly shows an unstable fluctuations between -0.1 to +0.2. 
 
 Then we want to analyze the stock price for google in the past 10-15 years. 
 ```{r}
-tq_get(c("GOOGL"), get="stock.prices") %>%
+tq_get(c("MSFT"), get="stock.prices") %>%
   ggplot(aes(date, close)) +
   geom_line()
 ```
