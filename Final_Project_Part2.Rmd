@@ -96,11 +96,11 @@ Microsoft_monthly_return <- Microsoft %>%
     col_rename = "monthly_return", 
   )
 Microsoft_monthly_return %>% head()
-Microsoft_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line(se = FALSE)
+Microsoft_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line()
 ```
 As can be see from the result, the monthly shows an unstable fluctuations between -0.1 to +0.2. 
 
-Then we want to analyze the stock price for google in the past 10-15 years. 
+Then we want to analyze the stock price for Microsoft in the past 10-15 years. 
 ```{r}
 tq_get(c("MSFT"), get="stock.prices") %>%
   ggplot(aes(date, close)) +
