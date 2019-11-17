@@ -12,6 +12,13 @@ library(tidyquant)
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
+library(TTR)
+library(lubridate)
+library(fs)
+library(plotly)
+pacman::p_load(tidyverse,tidyquant,PortfolioAnalytics,quantmod,PerformanceAnalytics,
+               tibbletime,timetk,ggthemes,timeDate,Quandl,alphavantager,readxl,broom,
+               DEoptim,pso,GenSA,Rglpk,ROI,ROI.plugin.glpk,ROI.plugin.quadprog,doParallel)
 ```
 
 ### Core Functions 
@@ -22,6 +29,40 @@ library(ggplot2)
   * Comparing with traditional industrial and non-traditional industrial
     * traditional industrial: manufacturing 
     * non-traditional industrial: IT 
+
+```{r}
+sp500 <- tq_index("sp500")
+nyse <- tq_exchange("nyse")
+nasdaq <- tq_exchange("NASDAQ")
+
+glimpse(sp500)
+
+glimpse(nyse)
+
+glimpse(nasdaq)
+```
+
+Select stock and using inner_joint to keep symbols from the SP500 that are also traded on NYSE and NASDAQ. 
+```{r}
+stocks.selection <- sp500 %>% 
+  inner_join(rbind(nyse,nasdaq) %>% select(symbol, last.sale.price,market.cap, ipo.year), by = c("symbol")) %>% 
+  filter(ipo.year<2000 & !is.na(market.cap)) %>% 
+  arrange(desc(weight)) %>% 
+  slice(1:10)
+
+stocks.selection <- stocks.selection %>% 
+  select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)
+stocks.selection
+```
+As can be seen from the selection table, the main sector is Information Technology company. 
+
+
+Select Five biggest information technology company from sp500, and also traded on NYSE or NASDAQ. 
+```{r}
+Information_technology company <- sq500 %>% 
+  inner_join(rbind(nyse,nasdaq))
+```
+
 
 1. We want to calculate the monthly returns for different stocks and compare the result of those stocks. 
   * Monthly return is the period returns re-scaled to a period of 1 month. This allows investors to compare returns of different assets that they have owned for different lengths of time. 
@@ -45,7 +86,7 @@ tq_get(c("GOOGL"), get="stock.prices") %>%
   ggplot(aes(date, close)) +
   geom_line()
 ```
-Although the montly return shows a dramatically fluctuation trend, however, the stock.price incrases dramatically with some minimum fluctuations from the past 15 years. (from less then 150 to more then 1750). However, as can be seen from the line graph. The graph indicates there are some big drops of the stock price between 2017 and 2019. In order to figure out the reason for this result, we want to get more companies information. 
+Although the montly return shows a dramatically fluctuation trend, however, the stock.price incrases dramatically with some minimum fluctuations from the past 15 years. (from less then 150 to more then 1750). However, as can be seen from the line graph. The graph indicates there are some big drops of the stock price between 2015 and 2019. In order to figure out the reason for this result, we want to get more companies information. 
 
 In order to dig deep for this problem, we want to compare Google's stock prices with more big name IT companies like Amazon, Facebook, and Apple. 
 
@@ -73,7 +114,7 @@ tq_get(c("GOOGL","AMZN","FB","AAPL"), get="stock.prices") %>%
   ggplot(aes(date, close, color=symbol)) +
   geom_line()
 ```
-As can be see from the graph, the stock prices for Apple, Amazon, Facebook, Google reflect a flctuational period from 2017-2019. The stock prices for Amazon and Google are much higher than Facebook, and Apple. 
+As can be see from the graph, the stock prices for Apple, Amazon, Facebook, Google reflect a flctuational period from 2015-2019. The stock prices for Amazon and Google are much higher than Facebook, and Apple. 
 
 **Construction**
 Kellogg, Brown, & Root Inc. (KBR) 
