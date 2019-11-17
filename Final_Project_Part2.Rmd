@@ -16,6 +16,7 @@ library(TTR)
 library(lubridate)
 library(fs)
 library(plotly)
+library(Quandl)
 pacman::p_load(tidyverse,tidyquant,PortfolioAnalytics,quantmod,PerformanceAnalytics,
                tibbletime,timetk,ggthemes,timeDate,Quandl,alphavantager,readxl,broom,
                DEoptim,pso,GenSA,Rglpk,ROI,ROI.plugin.glpk,ROI.plugin.quadprog,doParallel)
@@ -80,8 +81,9 @@ Information_technology_company <- sp500 %>%
   filter(!is.na(market.cap) & ( sector == "Information Technology" | sector == "Communication Services" | sector == "Consumer Discretionary" ) & !is.na(ipo.year)) %>% 
   arrange(desc(weight)) %>% 
   head(5)
+
 Information_technology_company <- Information_technology_company %>% 
-  select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)
+  select(symbol, company, weight,sector,shares_held, last.sale.price, market.cap, ipo.year)
 Information_technology_company
 ```
 
@@ -98,11 +100,11 @@ Microsoft_monthly_return <- Microsoft %>%
     col_rename = "monthly_return", 
   )
 Microsoft_monthly_return %>% head()
-Microsoft_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line()
+Microsoft_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line(se = FALSE)
 ```
 As can be see from the result, the monthly shows an unstable fluctuations between -0.1 to +0.2. 
 
-Then we want to analyze the stock price for Microsoft in the past 10-15 years. 
+Then we want to analyze the stock price for google in the past 10-15 years. 
 ```{r}
 tq_get(c("MSFT"), get="stock.prices") %>%
   ggplot(aes(date, close)) +
@@ -110,20 +112,22 @@ tq_get(c("MSFT"), get="stock.prices") %>%
 ```
 Although the montly return shows a dramatically fluctuation trend, however, the stock.price incrases dramatically with some minimum fluctuations from the past 15 years. (from less then 150 to more then 1750). However, as can be seen from the line graph. The graph indicates there are some big drops of the stock price between 2015 and 2019. In order to figure out the reason for this result, we want to get more companies information. 
 
-
 In order to dig deep for this problem, we want to compare Google's stock prices with more big name IT companies like Amazon, Facebook, and Apple. 
 
 ```{r}
 tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get = "stock.prices") %>% 
   head()
-tq_get(c("MSFT","GOOG", "AMZN","FB","AAPL"), get = "stock.prices") %>% 
+tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get = "stock.prices") %>% 
   group_by(symbol) %>% 
   tq_transmute(select = adjusted, 
                mutate_fun = periodReturn, 
                period = "monthly", 
                col_rename = "monthly_return") %>% 
-  ggplot(aes(date, monthly_return, color = symbol)) + geom_line()+theme_tq()+ scale_color()
+  ggplot(aes(date, monthly_return, color = symbol)) + geom_line() + theme_tq() + scale_color_tq()
 ```
+
+
+
 
 
 ```{r}
@@ -132,7 +136,7 @@ GAFA_data %>% head()
 
 tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get="stock.prices") %>%
   ggplot(aes(date, close, color=symbol)) +
-  geom_line()+theme_tq()+ scale_color_tq()
+  geom_line() + theme_tq() + scale_color_tq()
 ```
 As can be see from the graph, the stock prices for Apple, Amazon, Facebook, Google reflect a flctuational period from 2015-2019. The stock prices for Amazon and Google are much higher than Facebook, and Apple. 
 
@@ -150,7 +154,9 @@ Industrials <- sp500 %>%
   filter(!is.na(ipo.year) & !is.na(market.cap) & sector == "Industrials" & ipo.year <= 2000) %>% 
   arrange(desc(weight)) %>% 
   slice(1:10) 
-Industrials %>% select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year) %>% head()
+Industrials %>% 
+  select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year) %>% 
+  head()
 ```
 
 ```{r}
@@ -160,8 +166,12 @@ Industrials <- sp500 %>%
   filter(!is.na(ipo.year) & !is.na(market.cap) & sector == "Industrials" & ipo.year <= 2000) %>% 
   arrange(ipo.year) %>% 
   slice(1:10) 
-Industrials %>% select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)%>%head()
+Industrials %>% 
+  select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)  %>% 
+  head()
 ```
+
+
 
 Monthly return 
 ```{r}
@@ -173,7 +183,7 @@ tq_get(c("UPS", "ROP", "INFO", "CTAS","FAST"), get = "stock.prices") %>%
                mutate_fun = periodReturn, 
                period = "monthly", 
                col_rename = "monthly_return") %>% 
-  ggplot(aes(date,monthly_return, color = symbol )) + geom_line()+theme_tq()+ scale_color_tq()
+  ggplot(aes(date,monthly_return, color = symbol )) + geom_line() + theme_tq() + scale_color_tq()
   
 
 ```
@@ -181,34 +191,42 @@ tq_get(c("UPS", "ROP", "INFO", "CTAS","FAST"), get = "stock.prices") %>%
 ```{r}
 tq_get(c("UPS", "ROP", "INFO", "CTAS","FAST"), get="stock.prices") %>%
   ggplot(aes(date, close, color=symbol)) +
-  geom_line() + theme_tq()+ scale_color_tq()
+  geom_line() + theme_tq() + scale_color_tq()
 ```
 The graph indicates that the stock prices for traditional construction companies. 
 
-**Oil and gas**
-Exoon Mobil (XOM)
-chevron (CVX)
-Conoco Phillips (COP)
-EOG Resources (EOG)
+####Energy, Consumer Staples, Utilities
 ```{r}
-tq_get(c("XOM","CNX","COP","EOG"), get = "stock.prices") %>% 
+ECSU <- sp500 %>% 
+  inner_join(rbind(nasdaq, nyse) %>% 
+               select(symbol, last.sale.price, market.cap, ipo.year), by = c("symbol")) %>%
+  filter(!is.na(ipo.year) & !is.na(market.cap) & (sector == "Energy"|sector == "Consumer Staples")) %>% 
+  arrange(desc(weight)) %>% 
+  slice(1:10) 
+ECSU %>% 
+  select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)  %>%  
+  head()
+```
+
+```{r}
+tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
   head()
 
-tq_get(c("XOM","CNX","COP","eog"), get = "stock.prices") %>% 
+tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
     group_by(symbol) %>% 
   tq_transmute(select = adjusted, 
                mutate_fun = periodReturn, 
                period = "monthly", 
                col_rename = "monthly_return") %>% 
-  ggplot(aes(date,monthly_return, color = symbol )) + geom_line()+theme_tq()+ scale_color_tq()
+ggplot(aes(date,monthly_return, color = symbol )) + geom_line() + ylim(-1,1) + theme_tq() + scale_color_tq()
 ```
 
 ```{r}
-tq_get(c("XOM","CNX","COP","EOG"), get = "stock.prices") %>% 
-  ggplot(aes(date, close, color = symbol)) + geom_line()+theme_tq()+ scale_color_tq()
+tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
+  ggplot(aes(date, close, color = symbol)) + geom_line() + theme_tq() + scale_color_tq()
 ```
 
-**Telecommunications**
+####Telecommunication 
 AT&T Mobility (T) 
 Verizon Wireless (VZ) 
 T-Mobile (TMUS) 
@@ -223,14 +241,22 @@ tq_get(c("T","VZ","TMUS","S"), get = "stock.prices") %>%
                mutate_fun = periodReturn, 
                period = "monthly", 
                col_rename = "monthly_return") %>% 
-  ggplot(aes(date,monthly_return, color = symbol )) + geom_line()+theme_tq()+ scale_color_tq()
+  ggplot(aes(date,monthly_return, color = symbol )) + geom_line() + theme_tq() + scale_color_tq()
 ```
 
 ```{r}
 tq_get(c("T","VZ","TMUS","S"), get = "stock.prices") %>% 
-  ggplot(aes(date,close, color = symbol)) + geom_line()+theme_tq()+ scale_color_tq()
+  ggplot(aes(date,close, color = symbol)) + geom_line() + theme_tq() + scale_color_tq()
 ```
 
+```{r}
+quandl_api_key("FhkFyFfGRxgU2jYHmb51")
+quandl_search()
+```
+
+```{r}
+tq_get(c(""))
+```
 
 
 
