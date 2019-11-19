@@ -27,14 +27,13 @@ pacman::p_load(tidyverse,tidyquant,PortfolioAnalytics,quantmod,PerformanceAnalyt
  * **`tq_transmute()` and `tq_mutate()`:** Manipulating Financial Data
  * **`tq_performance` and `tq_portfolio`** Performance Analysis and Portfolio Analysis
 
-
-* What about stock performance? Quickly visualize how $10,000 investment in various stocks would perform for the past 15 years. 
-  * Comparing with traditional industrial and non-traditional industrial
+* Comparing with traditional industrial and non-traditional industrial
     * traditional industrial: manufacturing 
     * non-traditional industrial: IT 
 
 
-### Non-Traditional Industrial: IT 
+### Non-Traditional Industrial: Internet Technologies companies  
+Initialize work ranking 500 companies and Nasdaq Composites for the future implementation. Then using `glimpse()` function for geting main variables. 
 ```{r}
 sp500 <- tq_index("sp500")
 nyse <- tq_exchange("nyse")
@@ -47,18 +46,22 @@ glimpse(nyse)
 glimpse(nasdaq)
 ```
 
-Analyze how many sectors and how many companies correspond with sp500. 
+
+
+Analyzing each sector has how many corresponding companies for sp500. 
+The main sectors are: Industries, Information Technology, Fianacials, Consumer Discretionary, and Health Care. 
 ```{r}
 sector_fields <- sp500 %>% 
   group_by(sector) %>% 
   summarise(
     Quantity = n()
-  ) 
+  ) %>% 
+  arrange(desc(Quantity))
 sector_fields 
 ```
 
 
-Select stock and using inner_joint to keep symbols from the SP500 that are also traded on NYSE and NASDAQ. 
+Selecting stock and using inner_joint and keeping companies' symbols for the SP500 list that are also traded on NYSE and NASDAQ. We only keep the important variables like symbol, company, market.cap .... Then we arrange the data with a descending order of weight, in order to figure out which company has high market weight. We want to find out the stock prices and monthly return corresponding with though companies. 
 ```{r}
 stocks.selection <- sp500 %>% 
   inner_join(rbind(nyse,nasdaq) %>% select(symbol, last.sale.price,market.cap, ipo.year), by = c("symbol")) %>% 
@@ -70,10 +73,9 @@ stocks.selection <- stocks.selection %>%
   select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)
 stocks.selection
 ```
-As can be seen from the selection table, the main sector is Information Technology company. 
 
 
-Select Five biggest information technology company from sp500, and also traded on NYSE or NASDAQ. 
+Selecting Five biggest information technology company from sp500, and also traded on NYSE or NASDAQ. We find Google, Amazon, Facebook, Apple, and Microsoft are top 5 IT companies. 
 ```{r}
 Information_technology_company <- sp500 %>% 
   inner_join(rbind(nyse,nasdaq) %>% 
@@ -90,30 +92,35 @@ Information_technology_company
 
 1. We want to calculate the monthly returns for different stocks and compare the result of those stocks. 
   * Monthly return is the period returns re-scaled to a period of 1 month. This allows investors to compare returns of different assets that they have owned for different lengths of time. 
+  
+  * As can be see from the result, the monthly shows an unstable fluctuations between -0.1 to +0.2. 
 ```{r}
-Microsoft <- tq_get("MSFT", get = "stock.prices")
-Microsoft_monthly_return <- Microsoft %>% 
+Google <- tq_get("GOOG", get = "stock.prices")
+Google_monthly_return <- Google %>% 
   tq_transmute(
     select = adjusted, 
     mutate_fun = periodReturn, 
     period = "monthly",
     col_rename = "monthly_return", 
   )
-Microsoft_monthly_return %>% head()
-Microsoft_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line(se = FALSE)
+Google_monthly_return %>% head()
+Google_monthly_return %>% ggplot(aes(x = date, y = monthly_return)) + geom_line() + theme_tq() + scale_color_tq()
 ```
-As can be see from the result, the monthly shows an unstable fluctuations between -0.1 to +0.2. 
 
-Then we want to analyze the stock price for google in the past 10-15 years. 
+
+* Then we want to analyze the stock price for google in the past 10-15 years. 
+
+* Although the montly return shows a dramatically fluctuation trend, however, the stock.price incrases dramatically with some minimum fluctuations from the past 15 years. (from less then 150 to more then 1750). However, as can be seen from the line graph. The graph indicates there are some big drops of the stock price between 2015 and 2019. In order to figure out the reason for this result, we want to get more companies information. 
 ```{r}
-tq_get(c("MSFT"), get="stock.prices") %>%
+tq_get(c("GOOG"), get="stock.prices") %>%
   ggplot(aes(date, close)) +
-  geom_line()
+  geom_line() + theme_tq() + scale_color_tq()
 ```
-Although the montly return shows a dramatically fluctuation trend, however, the stock.price incrases dramatically with some minimum fluctuations from the past 15 years. (from less then 150 to more then 1750). However, as can be seen from the line graph. The graph indicates there are some big drops of the stock price between 2015 and 2019. In order to figure out the reason for this result, we want to get more companies information. 
 
-In order to dig deep for this problem, we want to compare Google's stock prices with more big name IT companies like Amazon, Facebook, and Apple. 
 
+* In order to dig deep for this problem, we want to compare Google's stock prices with more big name IT companies like Amazon, Facebook, Apple, Microsoft. 
+
+* The graph indicates Facebook experiences a period with dramatically influctuation from 2011-2013. 
 ```{r}
 tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get = "stock.prices") %>% 
   head()
@@ -129,6 +136,29 @@ tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get = "stock.prices") %>%
 
 
 
+Then we make a graph of stock's prices graph for Facebook, Google, Amazon, Apple, and Microsoft. All these five companies show an increasing trend for the stock's price. However, we realize that the increasing rate for Google and Amazon are much quicker than the other companies. We also realize both Google and Amazon experience a fluctuational periods for stock's price between 2015 - 2019. 
+
+
+**The reason caused Google and Amazon win on price stock since 2015:**
+  **create their own home service**
+  Peter Faricy, vice president of Amazon Marketplace, said the company has 2.4 million serve offers covering more 700 types 
+  of services. “I can tell you that with 85 million customers purchasing products from Amazon that needed installation or 
+  assembly, customers have told us that Amazon Home Services fills an important need,” he said.
+
+  For Google, where a spokesman said the effort was still in early stages, it is a chance to move beyond the advertising 
+  dollar to become part of the transaction itself, and to challenge Amazon more directly, as it is already trying with 
+  shopping and delivery services like Google Express.
+
+  “Amazon is always focused on having the widest selection on earth,” Mr. Faricy said, “and we will do the same with 
+  services.”
+  
+  **the cloud dataset**
+  The major players are Amazon and Google, who now offer their own infrastructure to the rest of the world as cloud 
+  computing services.
+
+  This spring, Amazon revealed that its cloud operation is now a $4.6 billion business, and the company expects it to grow 
+  to $6.23 billion by the end of the year. Google may not grow as quickly as Amazon's. But it will grow. It's where the 
+  world is moving.
 
 ```{r}
 GAFA_data  <- tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get = "stock.prices") 
@@ -138,14 +168,11 @@ tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get="stock.prices") %>%
   ggplot(aes(date, close, color=symbol)) +
   geom_line() + theme_tq() + scale_color_tq()
 ```
-As can be see from the graph, the stock prices for Apple, Amazon, Facebook, Google reflect a flctuational period from 2015-2019. The stock prices for Amazon and Google are much higher than Facebook, and Apple. 
 
 ### Traditional Industry 
 #### Industrials 
 
-Energy
-Consumer Staples
-Industrials
+Using data wrangling to select the top 5 traditional industrials companies. Then analyze the monthly return and stock's prices for those company. The top 5 industrials companies are United Parcel Service Inc., Roper Technologies Inc., IHS Markit Ltd., Cintas Corporation, and Fastenal Company. 
 
 ```{r}
 Industrials <- sp500 %>% 
@@ -159,21 +186,7 @@ Industrials %>%
   head()
 ```
 
-```{r}
-Industrials <- sp500 %>% 
-  inner_join(rbind(nasdaq, nyse) %>% 
-               select(symbol, last.sale.price, market.cap, ipo.year), by = c("symbol")) %>%
-  filter(!is.na(ipo.year) & !is.na(market.cap) & sector == "Industrials" & ipo.year <= 2000) %>% 
-  arrange(ipo.year) %>% 
-  slice(1:10) 
-Industrials %>% 
-  select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)  %>% 
-  head()
-```
-
-
-
-Monthly return 
+Calculating the monthly return and plotting the corresponding line graph. 
 ```{r}
 tq_get(c("UPS", "ROP", "INFO", "CTAS","FAST"), get = "stock.prices") %>% 
   head()
@@ -188,14 +201,39 @@ tq_get(c("UPS", "ROP", "INFO", "CTAS","FAST"), get = "stock.prices") %>%
 
 ```
 
+After analyzing the data and plotting the line graph for stock's price for top 5 industries company we find that all companies' stock prices increase stablly. Then we find out some information and business decision for those companies. 
+
 ```{r}
 tq_get(c("UPS", "ROP", "INFO", "CTAS","FAST"), get="stock.prices") %>%
   ggplot(aes(date, close, color=symbol)) +
   geom_line() + theme_tq() + scale_color_tq()
 ```
-The graph indicates that the stock prices for traditional construction companies. 
+* UPS
+Nearly 50 percent of  35 million sorted packages per day are processed using UPS’s new more-automated facilities. When UPS complete this phase of its Global Smart Logistics Network enhancement by 2022, 100% of eligible volume in the U.S. will be sorted using these new more highly automated sites.
+Seven new ‘super hub’ automated sortation facilities will be opened during the period, with 30-35% higher efficiency than comparable less-automated facilities. More than 70 expansion projects will be implemented during the period.
+
+
+* ROP
+Since the beginning of 2010, Roper Industries have deployed over $4 billion to acquire technology-focused businesses, including medical software, information networks, medical products and SaaS-based trading solutions
+
+
+* INFO
+Enhancing customer experience leads to major investment in network operations digital transformation with operations support systems (OSS), business support systems (BSS) and network management systems (NMS) accounting for 60 percent
+The Internet of Things (IoT), video and enterprise IP virtual private networks (IP VPNs) top the list of new digital services that service providers plan to launch over their transformed networks
+
+
+* CTAS
+Cintas rolled out a broad portfolio of solutions to digitalize HR processes, simplify organizational management and empower employee-partners to perform at their best with a world-class, mobile-enabled HR experience.
+Haiku — Deloitte’s HR-focused data-migration and data-transformation solution — helped significantly reduce conversion timelines and increase data-quality assurance in the always-critical area of data conversion.
+
+* FAST
+While Fastenal purchased the automated storage systems, the company built its own sortation system and developed its own WMS to serve its unique needs.
+Fastenal has plans to continue to add automation in the future. For instance, the company has implemented a scaled-down version of the mini-load, with 42,000 tote locations, and a unit load AS/RS. 
 
 ####Energy, Consumer Staples, Utilities
+
+Then we want to analyze the monthly return and stock's prices for Energy, Consumer Staples, and Utilities companies. The top 5 companies are Estee Lauder Companies Inc., Kinder Morgan Inc, Concho Resources Inc., Baker Hughes Company , and Diamondback Energy Inc.. 
+
 ```{r}
 ECSU <- sp500 %>% 
   inner_join(rbind(nasdaq, nyse) %>% 
@@ -208,6 +246,7 @@ ECSU %>%
   head()
 ```
 
+Plotting the monthly return line graph for these five companies. 
 ```{r}
 tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
   head()
@@ -220,7 +259,20 @@ tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>%
                col_rename = "monthly_return") %>% 
 ggplot(aes(date,monthly_return, color = symbol )) + geom_line() + ylim(-1,1) + theme_tq() + scale_color_tq()
 ```
+As can be seen from the stocks prices for energy are falling, we want to analyze why stocks' prices fall for this sector. 
+**Why does energy stocks are falling: **
+The dollar rallied to its highest level against a basket of foreign currencies since early 2017. Expectations of higher relative interest rates in the U.S. versus abroad make the dollar more attractive for investors, lifting demand for the currency.It matters for oil and other commodities because they are priced in dollars when traded globally. A more valuable dollar means that a barrel of oil is worth fewer dollars, all else equal.
+The trade war between China and American effects the net export of energy. Many economists expect that an ongoing US-China trade war could push the global economy toward a recession.
 
+**Why does Estee Lauder continually increase stock price:**
+* Earning groth 
+While the historical EPS growth rate for Estee Lauder is 14%, investors should actually focus on the projected growth. The company's EPS is expected to grow 11.9% this year, crushing the industry average, which calls for EPS growth of 8.7%.
+*Cash flow growth 
+The company's annualized cash flow growth rate has been 9.3% over the past 3-5 years versus the industry average of 8.2%.
+Otherwise, Estee Lauder are also working to balance a physical and digital footprint in that region. For example, the company will use data from their online purchases to determine which cities to enter.s
+
+
+Plotting the stocks' prices. 
 ```{r}
 tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
   ggplot(aes(date, close, color = symbol)) + geom_line() + theme_tq() + scale_color_tq()
@@ -249,14 +301,6 @@ tq_get(c("T","VZ","TMUS","S"), get = "stock.prices") %>%
   ggplot(aes(date,close, color = symbol)) + geom_line() + theme_tq() + scale_color_tq()
 ```
 
-```{r}
-quandl_api_key("FhkFyFfGRxgU2jYHmb51")
-quandl_search()
-```
-
-```{r}
-tq_get(c(""))
-```
 
 
 
