@@ -17,6 +17,8 @@ library(lubridate)
 library(fs)
 library(plotly)
 library(Quandl)
+library(plotly)
+library(timetk)
 pacman::p_load(tidyverse,tidyquant,PortfolioAnalytics,quantmod,PerformanceAnalytics,
                tibbletime,timetk,ggthemes,timeDate,Quandl,alphavantager,readxl,broom,
                DEoptim,pso,GenSA,Rglpk,ROI,ROI.plugin.glpk,ROI.plugin.quadprog,doParallel)
@@ -38,11 +40,8 @@ Initialize work ranking 500 companies and Nasdaq Composites for the future imple
 sp500 <- tq_index("sp500")
 nyse <- tq_exchange("nyse")
 nasdaq <- tq_exchange("NASDAQ")
-
 glimpse(sp500)
-
 glimpse(nyse)
-
 glimpse(nasdaq)
 ```
 
@@ -68,7 +67,6 @@ stocks.selection <- sp500 %>%
   filter(ipo.year<2000 & !is.na(market.cap)) %>% 
   arrange(desc(weight)) %>% 
   slice(1:10)
-
 stocks.selection <- stocks.selection %>% 
   select(symbol, company, weight, sector,shares_held,last.sale.price,market.cap,ipo.year)
 stocks.selection
@@ -83,7 +81,6 @@ Information_technology_company <- sp500 %>%
   filter(!is.na(market.cap) & ( sector == "Information Technology" | sector == "Communication Services" | sector == "Consumer Discretionary" ) & !is.na(ipo.year)) %>% 
   arrange(desc(weight)) %>% 
   head(5)
-
 Information_technology_company <- Information_technology_company %>% 
   select(symbol, company, weight,sector,shares_held, last.sale.price, market.cap, ipo.year)
 Information_technology_company
@@ -163,7 +160,6 @@ Then we make a graph of stock's prices graph for Facebook, Google, Amazon, Apple
 ```{r}
 GAFA_data  <- tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get = "stock.prices") 
 GAFA_data %>% head()
-
 tq_get(c("MSFT","AAPL", "AMZN","FB","GOOG"), get="stock.prices") %>%
   ggplot(aes(date, close, color=symbol)) +
   geom_line() + theme_tq() + scale_color_tq()
@@ -198,7 +194,6 @@ tq_get(c("UPS", "ROP", "INFO", "CTAS","FAST"), get = "stock.prices") %>%
                col_rename = "monthly_return") %>% 
   ggplot(aes(date,monthly_return, color = symbol )) + geom_line() + theme_tq() + scale_color_tq()
   
-
 ```
 
 After analyzing the data and plotting the line graph for stock's price for top 5 industries company we find that all companies' stock prices increase stablly. Then we find out some information and business decision for those companies. 
@@ -250,7 +245,6 @@ Plotting the monthly return line graph for these five companies.
 ```{r}
 tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
   head()
-
 tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
     group_by(symbol) %>% 
   tq_transmute(select = adjusted, 
@@ -263,21 +257,17 @@ As can be seen from the stocks prices for energy are falling, we want to analyze
 **Why does energy stocks are falling: **
 The dollar rallied to its highest level against a basket of foreign currencies since early 2017. Expectations of higher relative interest rates in the U.S. versus abroad make the dollar more attractive for investors, lifting demand for the currency.It matters for oil and other commodities because they are priced in dollars when traded globally. A more valuable dollar means that a barrel of oil is worth fewer dollars, all else equal.
 The trade war between China and American effects the net export of energy. Many economists expect that an ongoing US-China trade war could push the global economy toward a recession.
-
 **Why does Estee Lauder continually increase stock price:**
 * Earning groth 
 While the historical EPS growth rate for Estee Lauder is 14%, investors should actually focus on the projected growth. The company's EPS is expected to grow 11.9% this year, crushing the industry average, which calls for EPS growth of 8.7%.
 *Cash flow growth 
 The company's annualized cash flow growth rate has been 9.3% over the past 3-5 years versus the industry average of 8.2%.
 Otherwise, Estee Lauder are also working to balance a physical and digital footprint in that region. For example, the company will use data from their online purchases to determine which cities to enter.s
-
-
 Plotting the stocks' prices. 
 ```{r}
 tq_get(c("EL","KMI","CXO","BKR","FANG"), get = "stock.prices") %>% 
   ggplot(aes(date, close, color = symbol)) + geom_line() + theme_tq() + scale_color_tq()
 ```
-
 ####Telecommunication 
 AT&T Mobility (T) 
 Verizon Wireless (VZ) 
@@ -286,7 +276,6 @@ Sprint Corporation (S)
 ```{r}
 tq_get(c("T","VZ","TMUS","S"), get = "stock.prices") %>% 
   head()
-
 tq_get(c("T","VZ","TMUS","S"), get = "stock.prices") %>% 
     group_by(symbol) %>% 
   tq_transmute(select = adjusted, 
@@ -295,23 +284,225 @@ tq_get(c("T","VZ","TMUS","S"), get = "stock.prices") %>%
                col_rename = "monthly_return") %>% 
   ggplot(aes(date,monthly_return, color = symbol )) + geom_line() + theme_tq() + scale_color_tq()
 ```
-
 ```{r}
 tq_get(c("T","VZ","TMUS","S"), get = "stock.prices") %>% 
   ggplot(aes(date,close, color = symbol)) + geom_line() + theme_tq() + scale_color_tq()
 ```
+---------------------------
+Portfolio Optimization
+
+Choose the following 5 stocks
+
+* Apple Inc (AAPL)
+* Amazon (AMZN)
+* Netflix (NFLX)
+* Exxon Mobil (XOM)
+* AT&T (T)
+
+```{r}
+tick <- c('AMZN','AAPL','NFLX', 'XOM', 'T')
+price_data <- tq_get(tick,
+                     from = '2014-01-01',
+                     to = '2018-05-31',
+                     get = 'stock.prices')
+```
+
+```{r}
+log_ret_tidy <- price_data %>%
+  group_by(symbol) %>%
+  tq_transmute(select = adjusted,
+               mutate_fun = periodReturn,
+               period = 'daily',
+               col_rename = 'ret',
+               type = 'log')
+```
+
+```{r}
+head(log_ret_tidy)
+```
+```{r}
+log_ret_xts <- log_ret_tidy %>%
+  spread(symbol, value = ret) %>%
+  tk_xts()
+```
+```{r}
+head(log_ret_xts)
+```
+
+```{r}
+mean_ret <- colMeans(log_ret_xts)
+```
+```{r}
+cov_mat <- cov(log_ret_xts) * 252
+```
+
+```{r}
+#random weights
+wts <- runif(n = length(tick))
+wts <- wts/sum(wts)
+
+# Calculate the portfolio returns
+port_returns <- (sum(wts * mean_ret) + 1)^252 - 1
+
+# Calculate the portfolio risk
+port_risk <- sqrt(t(wts) %*% (cov_mat %*% wts))
+
+# Calculate the Sharpe Ratio
+sharpe_ratio <- port_returns/port_risk
+
+print(wts)
+```
+
+
+```{r}
+print(port_returns)
+```
+
+```{r}
+print(port_risk)
+```
+
+```{r}
+print(sharpe_ratio)
+```
+
+We have everything we need to perform our optimization. All we need is to runn this code on 5000 random portfolios. For that we will use a for loop.
+Before do that, we need to create empty vectors and matrix for storing our values
+
+```{r}
+num_port <- 5000
+
+# Creating a matrix to store the weights
+
+all_wts <- matrix(nrow = num_port,
+                  ncol = length(tick))
+
+port_returns <- vector('numeric', length = num_port)
+
+port_risk <- vector('numeric', length = num_port)
+
+sharpe_ratio <- vector('numeric', length = num_port)
+```
+
+```{r}
+for (i in seq_along(port_returns)) {
+  
+  wts <- runif(length(tick))
+  wts <- wts/sum(wts)
+  
+  # Storing weight in the matrix
+  all_wts[i,] <- wts
+  
+  # Portfolio returns
+  
+  port_ret <- sum(wts * mean_ret)
+  port_ret <- ((port_ret + 1)^252) - 1
+  
+  # Storing Portfolio Returns values
+  port_returns[i] <- port_ret
+  
+  
+  # Creating and storing portfolio risk
+  port_sd <- sqrt(t(wts) %*% (cov_mat  %*% wts))
+  port_risk[i] <- port_sd
+  
+  # Creating and storing Portfolio Sharpe Ratios
+  # Assuming 0% Risk free rate
+  sr <- port_ret/port_sd
+  sharpe_ratio[i] <- sr
+  
+}
+```
+
+
+```{r}
+#storing the values in the table
+portfolio_values <- tibble(Return = port_returns,
+                           Risk = port_risk,
+                           SharpeRatio = sharpe_ratio)
+
+all_wts <- tk_tbl(all_wts)
+```
+
+
+```{r}
+colnames(all_wts) <- colnames(log_ret_xts)
+portfolio_values <- tk_tbl(cbind(all_wts,portfolio_values))
+```
+
+```{r}
+head(portfolio_values)
+```
+We have the weights in each asset with the rick and returns alongn with the sharpe ratio of each portfolio
+next take a look at the portfolios that matter the most
+* The minimum variance portfolio
+* The tangency portoflio(the portfolio with the hightest sharpe ratio)
+```{r}
+min_var <- portfolio_values[which.min(portfolio_values$Risk),]
+max_sr <- portfolio_values[which.max(portfolio_values$SharpeRatio),]
+```
 
 
 
+```{r}
+p <- min_var %>%
+  gather(AAPL:XOM, key = Asset,
+         value = Weights) %>%
+  mutate(Asset = as.factor(Asset)) %>%
+  ggplot(aes(x = fct_reorder(Asset, Weights), y = Weights, fill =Asset))+
+  geom_bar(stat = 'identity')+
+  theme_minimal()+
+  labs(x='Assets', y = 'Weights', title = "Minimum Variance Portfolio Weights")+
+  scale_y_continuous(labels =  scales::percent)
 
+ggplotly(p)
+```
+From this plot, we can observe the Minimum variance portfolio has no allocation to Netflix and very little allocation to Amazon. The majority of the portfolio is invested in Exxon Mobil andd AT&T stock.
 
+Next lets look at the tangency portfolio or the portfolio with the highest sharpe ratio. Generally, the greater the value of the Sharpe ratio, the more attractive the risk-adjusted return.
 
+```{r}
+p <- max_sr %>%
+  gather(AAPL:XOM, key = Asset,
+         value = Weights) %>%
+  mutate(Asset = as.factor(Asset))%>%
+  ggplot(aes(x= fct_reorder(Asset,Weights), y = Weights, fill =Asset))+
+  geom_bar(stat = 'identity')+
+  theme_minimal()+
+  labs(x= 'Assets', y = 'Weights', title = "Tangency Portfolio Weights")+
+  scale_y_continuous(labels = scales::percent)
 
+ggplotly(p)
+```
+From the plot, we can observe that the portfolio with the highest sharpe ratio has very little invested in Exxon Mobil and AT&T. This portfolio has most of the assets investedd in Amazon, Netflix and Apple. Three best performinng stocks in the last decade.
 
+Lastly, we plot all the random portfolios and visualize the efficient frontier.
+```{r}
+p <- portfolio_values %>%
+  ggplot(aes(x = Risk, y = Return, color = SharpeRatio)) +
+  geom_point() +
+  theme_classic() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_continuous(labels = scales::percent) +
+  labs(x = 'Annualized Risk',
+       y = 'Annualized Returns',
+       title = "Portfolio Optimization & Efficient Frontier") +
+  geom_point(aes(x = Risk,
+                 y = Return), data = min_var, color = 'red') +
+  geom_point(aes(x = Risk,
+                 y = Return), data = max_sr, color = 'red') +
+  annotate('text', x = 0.20, y = 0.42, label = "Tangency Portfolio") +
+  annotate('text', x = 0.18, y = 0.01, label = "Minimum variance portfolio") +
+  annotate(geom = 'segment', x = 0.14, xend = 0.135,  y = 0.01, 
+           yend = 0.06, color = 'red', arrow = arrow(type = "open")) +
+  annotate(geom = 'segment', x = 0.22, xend = 0.2275,  y = 0.405, 
+           yend = 0.365, color = 'red', arrow = arrow(type = "open"))
+  
 
+ggplotly(p)
+```
 
-
-
+In the plot above, we can observe that all 5000 portfolios. A investor will try to obtain portfolios that lie on the efficient frontier.
 
 
 
