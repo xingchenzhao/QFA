@@ -1,0 +1,38 @@
+---
+title: "Final_Project_Proposal"
+author: "Zhuofei Xie, Xingchen Zhao, Qinyu Han"
+date: "10/21/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### **Topic:**
+* Quantitative Financial Analysis 
+
+### **Group members: (Group 4) ** 
+* Xingchen Zhao (Junior)  
+  * Major: Computer Science 
+  * Minor: Statistics 
+* Qinyu Han (Junior)
+  * Major: Economics-Statistics 
+ * Zhuofei Xie (Junior)
+  * Major: Applied Mathematics 
+  * Minor: Computer Science 
+  * Minor: Statistics 
+
+### **Goal of the Analysis: **
+* What about stock performance? Quickly visualize how $10,000 investment in various stocks would perform. (past 15 years)
+  * Comparing with traditional industrial and non-traditional industrial
+    * traditional industrial: manufacturing 
+    * non-traditional industrial: IT 
+    
+* From past 15 years, which field is the main investment fields for different company. (Big name company)
+
+* Analyzing the trend of all stock performance in the past 15 years and connecting the trend of the stock with the domestic economic environment and global economic environment. 
+
+* Predicting the main future investment fields. 
+    
+
